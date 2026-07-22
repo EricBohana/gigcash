@@ -29,3 +29,4 @@ const safeConfig = hasFirebaseConfig ? firebaseConfig : {
 const app = initializeApp(safeConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+ 
