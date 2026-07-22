@@ -1,0 +1,275 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Estilização de Scrollbar Personalizada */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0A1122;
+}
+::-webkit-scrollbar-thumb {
+  background: #1f293d;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #7C3AED;
+}
+
+/* Classes utilitárias adicionais */
+.gradient-bg {
+  background: radial-gradient(circle at top right, rgba(124, 58, 237, 0.18), transparent 45%),
+              radial-gradient(circle at bottom left, rgba(219, 39, 119, 0.12), transparent 45%),
+              #0A1122;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #7C3AED 0%, #DB2777 50%, #F97316 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-border {
+  border-image: linear-gradient(135deg, #7C3AED, #DB2777, #F97316) 1;
+}
+
+.gradient-btn {
+  background: linear-gradient(135deg, #7C3AED 0%, #DB2777 50%, #F97316 100%);
+  transition: all 0.3s ease;
+}
+
+.gradient-btn:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -3px rgba(219, 39, 119, 0.3);
+}
+
+.card-blur {
+  background: rgba(21, 28, 48, 0.65);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Configuração do print para simular PDF/Impressão de forma perfeita */
+@media print {
+  body, html {
+    background: #ffffff !important;
+    color: #000000 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Oculta elementos desnecessários na hora de imprimir */
+  #root > main > div:not(.printable-pdf-card),
+  #root > main > div > div:not(.printable-pdf-card),
+  .no-print,
+  button,
+  #btn-preview-pdf,
+  #btn-download-pdf,
+  #band-settings-section,
+  #budget-history-section,
+  #export-pdf-section,
+  #budget-summary-section,
+  #budget-form-section,
+  header,
+  footer {
+    display: none !important;
+  }
+
+  /* Garante que o card de visualização do PDF ocupe a tela inteira de impressão */
+  .printable-pdf-card {
+    display: block !important;
+    visibility: visible !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 12px !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11px !important;
+  }
+
+  /* Reduzir o espaçamento vertical space-y-6 da página */
+  .printable-pdf-card.space-y-6 > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-y-reverse: 0 !important;
+    margin-top: 0.55rem !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* Reduzir paddings dos blocos principais do PDF */
+  .printable-pdf-card .p-8 {
+    padding: 1rem !important;
+  }
+
+  .printable-pdf-card .p-4 {
+    padding: 0.5rem 0.75rem !important;
+  }
+
+  .printable-pdf-card .p-3 {
+    padding: 0.4rem 0.6rem !important;
+  }
+
+  .printable-pdf-card .p-6 {
+    padding: 0.4rem !important;
+  }
+
+  .printable-pdf-card .gap-4 {
+    gap: 0.5rem !important;
+  }
+
+  /* Reduzir tamanho das fontes gerais e específicas dentro do PDF */
+  .printable-pdf-card h2 {
+    font-size: 1.15rem !important;
+  }
+
+  .printable-pdf-card h4 {
+    font-size: 10px !important;
+    margin-bottom: 0.15rem !important;
+  }
+
+  .printable-pdf-card .text-2xl {
+    font-size: 1.2rem !important;
+  }
+
+  .printable-pdf-card .text-sm {
+    font-size: 10.5px !important;
+  }
+
+  .printable-pdf-card .text-xs {
+    font-size: 9.5px !important;
+  }
+
+  .printable-pdf-card .text-\[10px\] {
+    font-size: 8.5px !important;
+  }
+
+  .printable-pdf-card p, .printable-pdf-card span, .printable-pdf-card div {
+    line-height: 1.25 !important;
+  }
+
+  /* Reduzir margens específicas */
+  .printable-pdf-card .-mx-6 {
+    margin-left: -12px !important;
+    margin-right: -12px !important;
+  }
+  .printable-pdf-card .-mt-6 {
+    margin-top: -12px !important;
+  }
+
+  /* Garantir que linhas de tabela e lineups ocupem menos espaço vertical */
+  .printable-pdf-card .space-y-2 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.2rem !important;
+  }
+  .printable-pdf-card .space-y-1 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.12rem !important;
+  }
+  .printable-pdf-card .pt-2 {
+    padding-top: 0.3rem !important;
+  }
+  .printable-pdf-card .pt-4 {
+    padding-top: 0.4rem !important;
+  }
+
+  .print-modal-container {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  .no-print-backdrop {
+    background: #ffffff !important;
+    position: absolute !important;
+    inset: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  .print-card {
+    border: 1px solid #e2e8f0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Controle de quebra de página */
+  .print-avoid-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Alinhamento de textos empilhados */
+  .print-text-left {
+    text-align: left !important;
+  }
+
+  /* Transforma layouts lado a lado (grid/flex) em blocos empilhados verticais */
+  .print-stack {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+    grid-template-columns: none !important;
+  }
+
+  .print-stack > * {
+    width: 100% !important;
+    text-align: left !important;
+  }
+}
+
+/* Overrides globais para Inputs na Cor Branca com Texto Escuro */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="email"],
+textarea {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+  border-color: #CBD5E1 !important;
+  color-scheme: light !important;
+}
+
+/* Placeholder elegante em tom slate médio */
+input[type="text"]::placeholder,
+input[type="number"]::placeholder,
+input[type="date"]::placeholder,
+input[type="email"]::placeholder,
+textarea::placeholder {
+  color: #64748B !important;
+  opacity: 0.8 !important;
+}
+
+/* Foco sofisticado nos campos */
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+input[type="email"]:focus,
+textarea:focus {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+  border-color: #7C3AED !important;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.15) !important;
+}
