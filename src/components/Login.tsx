@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../lib/firebase";
+import { signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { auth, db } from "../lib/firebase";
 import { KeyRound, Mail, AlertCircle, Loader2 } from "lucide-react";
 
 export default function Login() {
@@ -20,10 +21,45 @@ export default function Login() {
     setLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email.trim(), password);
+      // 1. Faz o login normal pelo Firebase Auth
+      const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
+      const user = userCredential.user;
+
+      // 2. Cria ou recupera um ID único para este navegador/aparelho específico
+      let localDeviceId = localStorage.getItem("gigcash_device_id");
+      if (!localDeviceId) {
+        localDeviceId = "dev_" + Math.random().toString(36).substring(2) + Date.now().toString(36);
+        localStorage.setItem("gigcash_device_id", localDeviceId);
+      }
+
+      // 3. Verifica no Firestore se já existe registro de controle para este usuário
+      const userDocRef = doc(db, "users_sessions", user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        const activeDevice = data.activeDeviceId;
+
+        // Se há um aparelho ativo registrado E ele é diferente deste navegador atual
+        if (activeDevice && activeDevice !== localDeviceId) {
+          // Desloga do Firebase imediatamente para barrar o acesso
+          await signOut(auth);
+          setError("Acesso negado: Esta conta já está ativa em outro dispositivo. Encerre a sessão no outro aparelho para acessar aqui.");
+          setLoading(false);
+          return;
+        }
+      }
+
+      // 4. Se não houver nenhum aparelho ativo ou se for o mesmo, registra este dispositivo
+      await setDoc(userDocRef, {
+        email: user.email,
+        activeDeviceId: localDeviceId,
+        lastLogin: new Date().toISOString()
+      }, { merge: true });
+
     } catch (err: any) {
       console.error("Erro ao autenticar:", err);
-      // Friendly, clean Portuguese messages for Firebase Auth errors
+      // Mensagens amigáveis em português para erros do Firebase Auth
       if (err.code === "auth/invalid-credential" || err.code === "auth/wrong-password" || err.code === "auth/user-not-found") {
         setError("E-mail ou senha incorretos. Verifique suas credenciais.");
       } else if (err.code === "auth/invalid-email") {
