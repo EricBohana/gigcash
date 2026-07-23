@@ -18,29 +18,144 @@ import BandSettings from "./components/BandSettings";
 import BudgetHistory from "./components/BudgetHistory";
 import PdfExportButton from "./components/PdfExportButton";
 import LoadingIndicator from "./components/LoadingIndicator";
-import LicenseManager from "./components/LicenseManager";
-import { Sparkles, TrendingUp } from "lucide-react";
+import { Sparkles, TrendingUp, Lock, Mail, Key, UserPlus, LogIn, LogOut, CheckCircle2, AlertCircle } from "lucide-react";
+
+// Chave padrão exigida no cadastro para validar a compra da Kiwify
+const VALID_LICENSE_KEY = "GIG-2026-PRO";
 
 export default function App() {
   const [budget, setBudget] = useState<BudgetState>(INITIAL_BUDGET_STATE);
   const [bandSettings, setBandSettings] = useState<BandIdentity>(DEFAULT_BAND_IDENTITY);
   
-  // Licenciamento liberado diretamente
-  const [isActivated, setIsActivated] = useState<boolean>(true);
-  const [licenseKey, setLicenseKey] = useState<string>("GIGCASH-PLAY-PREMIUM");
+  // ESTADOS DE AUTENTICAÇÃO E CADASTRO
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [authMode, setAuthMode] = useState<"login" | "register">("login"); // 'login' ou 'register'
+  
+  // Form de Login
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
 
-  const handleActivationChange = (status: boolean) => {
-    setIsActivated(status);
-  };
+  // Form de Cadastro (Primeiro Acesso)
+  const [regEmail, setRegEmail] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+  const [regPasswordConfirm, setRegPasswordConfirm] = useState("");
+  const [regKey, setRegKey] = useState("");
 
-  const handleLicenseKeyChange = (key: string) => {
-    setLicenseKey(key);
-  };
+  // Mensagens de erro / sucesso
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authSuccess, setAuthSuccess] = useState<string | null>(null);
+
+  // User ativo
+  const [currentUserEmail, setCurrentUserEmail] = useState<string>("");
 
   // Loading states
   const [isLoading, setIsLoading] = useState(false);
   const [loadingPresetName, setLoadingPresetName] = useState("");
-  const [activePresetId, setActivePresetId] = useState<string | null>(null);
+
+  // 1. Verificar se já existe sessão ativa no navegador
+  useEffect(() => {
+    const activeSession = localStorage.getItem("gigcash_active_session");
+    if (activeSession) {
+      setCurrentUserEmail(activeSession);
+      setIsLoggedIn(true);
+    }
+  }, []);
+
+  // CARREGAR CADASTROS EXISTENTES
+  const getRegisteredUsers = (): Record<string, string> => {
+    try {
+      const users = localStorage.getItem("gigcash_registered_users");
+      return users ? JSON.parse(users) : {};
+    } catch {
+      return {};
+    }
+  };
+
+  // AÇÃO: REALIZAR CADASTRO (PRIMEIRO ACESSO)
+  const handleRegister = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    setAuthSuccess(null);
+
+    const emailClean = regEmail.trim().toLowerCase();
+    const keyClean = regKey.trim().toUpperCase();
+
+    if (!emailClean || !regPassword) {
+      setAuthError("Por favor, preencha todos os campos.");
+      return;
+    }
+
+    if (regPassword !== regPasswordConfirm) {
+      setAuthError("As senhas informadas não coincidem.");
+      return;
+    }
+
+    if (regPassword.length < 6) {
+      setAuthError("A senha deve ter no mínimo 6 caracteres.");
+      return;
+    }
+
+    // Validar Chave de Compra
+    if (keyClean !== VALID_LICENSE_KEY && !keyClean.startsWith("GIG-")) {
+      setAuthError("Código de Compra inválido. Verifique a chave recebida no seu e-mail da Kiwify.");
+      return;
+    }
+
+    const users = getRegisteredUsers();
+
+    if (users[emailClean]) {
+      setAuthError("Este e-mail já possui uma conta cadastrada. Faça login na aba 'Entrar'.");
+      return;
+    }
+
+    // Salva a nova conta (E-mail -> Senha)
+    users[emailClean] = regPassword;
+    localStorage.setItem("gigcash_registered_users", JSON.stringify(users));
+
+    // Salva a sessão ativa
+    localStorage.setItem("gigcash_active_session", emailClean);
+    setCurrentUserEmail(emailClean);
+
+    setAuthSuccess("Conta criada com sucesso! Acessando o painel...");
+    setTimeout(() => {
+      setIsLoggedIn(true);
+      setAuthSuccess(null);
+    }, 1000);
+  };
+
+  // AÇÃO: REALIZAR LOGIN
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    setAuthSuccess(null);
+
+    const emailClean = loginEmail.trim().toLowerCase();
+    const users = getRegisteredUsers();
+
+    if (!users[emailClean]) {
+      setAuthError("E-mail não cadastrado. Vá na aba 'Primeiro Acesso' para criar sua conta.");
+      return;
+    }
+
+    if (users[emailClean] !== loginPassword) {
+      setAuthError("E-mail ou senha incorretos.");
+      return;
+    }
+
+    // Login efetuado com sucesso
+    localStorage.setItem("gigcash_active_session", emailClean);
+    setCurrentUserEmail(emailClean);
+    setIsLoggedIn(true);
+  };
+
+  // AÇÃO: SAIR / LOGOUT
+  const handleLogout = () => {
+    if (window.confirm("Deseja realmente sair da sua conta?")) {
+      localStorage.removeItem("gigcash_active_session");
+      setIsLoggedIn(false);
+      setCurrentUserEmail("");
+    }
+  };
 
   // Carregar configurações da banda ao iniciar
   useEffect(() => {
@@ -63,7 +178,6 @@ export default function App() {
     }
   }, []);
 
-  // Atualizar identidade da banda no localStorage
   const handleSettingsChange = (newSettings: BandIdentity) => {
     setBandSettings(newSettings);
     try {
@@ -73,25 +187,6 @@ export default function App() {
     }
   };
 
-  // Carregar Presets
-  const handleSelectPreset = (preset: BudgetPreset) => {
-    setLoadingPresetName(preset.name);
-    setIsLoading(true);
-    
-    setTimeout(() => {
-      const mergedBudget: BudgetState = {
-        ...INITIAL_BUDGET_STATE,
-        ...preset.data,
-        id: "preset-" + preset.id,
-        name: preset.name,
-      };
-      setBudget(mergedBudget);
-      setActivePresetId(preset.id);
-      setIsLoading(false);
-    }, 1200);
-  };
-
-  // Salvar no histórico local
   const handleSaveCurrent = (name: string) => {
     const updatedBudget: BudgetState = {
       ...budget,
@@ -111,22 +206,214 @@ export default function App() {
     }
   };
 
-  // Carregar orçamento do histórico
   const handleLoadBudget = (loadedBudget: BudgetState) => {
     setLoadingPresetName(loadedBudget.name);
     setIsLoading(true);
     
     setTimeout(() => {
       setBudget(loadedBudget);
-      setActivePresetId(null);
       setIsLoading(false);
     }, 1000);
   };
 
+  // ==========================================
+  // TELA DE AUTENTICAÇÃO (LOGIN / CADASTRO)
+  // ==========================================
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen gradient-bg text-slate-100 flex items-center justify-center p-4 relative overflow-hidden font-sans">
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-gradient-to-br from-violet-600/20 via-pink-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-md w-full relative z-10">
+          <div className="card-blur rounded-3xl p-8 border border-white/10 shadow-2xl space-y-6">
+            
+            {/* Logo */}
+            <div className="flex flex-col items-center justify-center space-y-2 text-center">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-violet-600 via-pink-500 to-orange-500 rounded-2xl blur-md opacity-70 animate-pulse" />
+                <div className="relative w-14 h-14 rounded-2xl bg-[#0a1122] border border-white/10 flex items-center justify-center font-sans overflow-hidden">
+                  <span className="text-2xl font-black bg-gradient-to-r from-[#3B82F6] to-[#F97316] bg-clip-text text-transparent">
+                    GC
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <h1 className="text-2xl font-black text-white tracking-tight">
+                  GIG<span className="gradient-text">CASH</span> <span className="text-xs font-bold text-pink-400 bg-pink-500/20 px-2 py-0.5 rounded-full">PRO</span>
+                </h1>
+                <p className="text-xs text-slate-400 mt-1">Plataforma Exclusiva de Orçamentos</p>
+              </div>
+            </div>
+
+            {/* Alternador de Abas (Entrar vs Primeiro Acesso) */}
+            <div className="flex bg-slate-950/70 p-1 rounded-xl border border-white/5 text-xs font-semibold">
+              <button
+                type="button"
+                onClick={() => { setAuthMode("login"); setAuthError(null); setAuthSuccess(null); }}
+                className={`flex-1 py-2.5 rounded-lg transition flex items-center justify-center gap-1.5 ${
+                  authMode === "login" 
+                    ? "bg-gradient-to-r from-violet-600 to-pink-500 text-white shadow-md" 
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                Entrar
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAuthMode("register"); setAuthError(null); setAuthSuccess(null); }}
+                className={`flex-1 py-2.5 rounded-lg transition flex items-center justify-center gap-1.5 ${
+                  authMode === "register" 
+                    ? "bg-gradient-to-r from-violet-600 to-pink-500 text-white shadow-md" 
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                Primeiro Acesso
+              </button>
+            </div>
+
+            {/* FORMULÁRIO DE LOGIN */}
+            {authMode === "login" && (
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5 text-pink-400" />
+                    Seu E-mail
+                  </label>
+                  <input
+                    type="email"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    placeholder="seuemail@exemplo.com"
+                    className="w-full bg-slate-950/70 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-pink-400" />
+                    Sua Senha
+                  </label>
+                  <input
+                    type="password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full bg-slate-950/70 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition"
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3.5 px-4 bg-gradient-to-r from-violet-600 via-pink-500 to-orange-500 hover:opacity-95 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-pink-500/20 flex items-center justify-center gap-2 mt-2"
+                >
+                  <LogIn className="w-4 h-4" />
+                  Entrar no Painel
+                </button>
+              </form>
+            )}
+
+            {/* FORMULÁRIO DE CADASTRO (PRIMEIRO ACESSO) */}
+            {authMode === "register" && (
+              <form onSubmit={handleRegister} className="space-y-3.5">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5 text-pink-400" />
+                    E-mail de Assinante
+                  </label>
+                  <input
+                    type="email"
+                    value={regEmail}
+                    onChange={(e) => setRegEmail(e.target.value)}
+                    placeholder="O mesmo e-mail da compra Kiwify"
+                    className="w-full bg-slate-950/70 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-slate-300">Crie uma Senha</label>
+                    <input
+                      type="password"
+                      value={regPassword}
+                      onChange={(e) => setRegPassword(e.target.value)}
+                      placeholder="Mínimo 6 dígitos"
+                      className="w-full bg-slate-950/70 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-slate-300">Confirme a Senha</label>
+                    <input
+                      type="password"
+                      value={regPasswordConfirm}
+                      onChange={(e) => setRegPasswordConfirm(e.target.value)}
+                      placeholder="Repita a senha"
+                      className="w-full bg-slate-950/70 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                    <Key className="w-3.5 h-3.5 text-pink-400" />
+                    Código de Compra (Kiwify)
+                  </label>
+                  <input
+                    type="text"
+                    value={regKey}
+                    onChange={(e) => setRegKey(e.target.value)}
+                    placeholder="Ex: GIG-2026-PRO"
+                    className="w-full bg-slate-950/70 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white font-mono placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition uppercase"
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3.5 px-4 bg-gradient-to-r from-violet-600 via-pink-500 to-orange-500 hover:opacity-95 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-pink-500/20 flex items-center justify-center gap-2 mt-2"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Cadastrar e Acessar
+                </button>
+              </form>
+            )}
+
+            {/* MENSAGENS DE ALERTA */}
+            {authError && (
+              <div className="flex items-center gap-2 text-xs text-red-400 bg-red-500/10 p-3 rounded-xl border border-red-500/20">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{authError}</span>
+              </div>
+            )}
+
+            {authSuccess && (
+              <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/20">
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                <span>{authSuccess}</span>
+              </div>
+            )}
+
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // PAINEL PRINCIPAL (SISTEMA LIBERADO)
+  // ==========================================
   return (
     <div className="min-h-screen gradient-bg text-slate-100 flex flex-col font-sans selection:bg-pink-500 selection:text-white pb-12 relative overflow-hidden">
       
-      {/* BACKGROUND GRAPHICS & LIGHT SPOTS */}
+      {/* BACKGROUND GRAPHICS */}
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-gradient-to-br from-violet-600/10 via-pink-500/5 to-transparent rounded-full blur-3xl pointer-events-none" />
       <div className="absolute top-1/3 right-1/4 w-[600px] h-[600px] bg-gradient-to-tr from-pink-500/5 via-orange-500/5 to-transparent rounded-full blur-3xl pointer-events-none" />
 
@@ -145,9 +432,6 @@ export default function App() {
                 <span className="text-lg font-black bg-gradient-to-r from-[#3B82F6] to-[#F97316] bg-clip-text text-transparent tracking-tighter">
                   GC
                 </span>
-                <span className="absolute bottom-0.5 right-1 text-[8px] animate-bounce" style={{ animationDuration: '3s' }}>
-                  ⭐
-                </span>
               </div>
             </div>
             
@@ -164,25 +448,21 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="hidden lg:flex items-center space-x-6 text-xs bg-slate-900/30 p-2 px-4 rounded-xl border border-white/5">
-              <div className="text-center">
-                <span className="text-slate-500 uppercase font-semibold text-[9px] block tracking-wider">Identidade ativa</span>
-                <span className="text-pink-400 font-bold">{bandSettings.name}</span>
-              </div>
-              <div className="w-px h-6 bg-slate-800" />
-              <div className="text-center">
-                <span className="text-slate-500 uppercase font-semibold text-[9px] block tracking-wider">Moeda</span>
-                <span className="text-slate-300 font-mono font-bold">BRL (R$)</span>
-              </div>
+          {/* Usuário Conectado & Botão de Sair */}
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex flex-col text-right">
+              <span className="text-[10px] text-slate-500 font-semibold uppercase">Conectado como</span>
+              <span className="text-xs text-pink-400 font-medium font-mono">{currentUserEmail}</span>
             </div>
 
-            <LicenseManager 
-              isActivated={isActivated}
-              onActivationChange={handleActivationChange}
-              licenseKey={licenseKey}
-              onLicenseKeyChange={handleLicenseKeyChange}
-            />
+            <button
+              onClick={handleLogout}
+              title="Sair da Conta"
+              className="flex items-center gap-2 px-3 py-2 bg-slate-900/60 hover:bg-slate-800 border border-white/10 rounded-xl text-xs text-slate-300 hover:text-white transition"
+            >
+              <LogOut className="w-3.5 h-3.5 text-slate-400" />
+              <span>Sair</span>
+            </button>
           </div>
 
         </div>
@@ -291,7 +571,6 @@ export default function App() {
       {/* FOOTER */}
       <footer className="border-t border-white/5 mt-16 pt-8 text-center text-xs text-slate-500 space-y-2">
         <p>GIGCASH Pro © 2026 • Projetado com foco em alta conversão e controle operacional para músicos.</p>
-        <p className="text-[10px] text-slate-600">Desenvolvido em conformidade técnica com cálculos de margem de serviço e retenção de impostos.</p>
       </footer>
 
     </div>
