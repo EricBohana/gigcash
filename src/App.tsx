@@ -18,7 +18,7 @@ import BandSettings from "./components/BandSettings";
 import BudgetHistory from "./components/BudgetHistory";
 import PdfExportButton from "./components/PdfExportButton";
 import LoadingIndicator from "./components/LoadingIndicator";
-import { Sparkles, TrendingUp, Lock, Mail, Key, UserPlus, LogIn, LogOut, CheckCircle2, AlertCircle } from "lucide-react";
+import { Sparkles, TrendingUp, Lock, Mail, Key, UserPlus, LogIn, LogOut, CheckCircle2, AlertCircle, ShoppingCart } from "lucide-react";
 
 // Chave padrão exigida no cadastro para validar a compra da Kiwify
 const VALID_LICENSE_KEY = "GIG-2026-PRO";
@@ -221,8 +221,8 @@ export default function App() {
   // ==========================================
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen gradient-bg text-slate-100 flex items-center justify-center p-4 relative overflow-hidden font-sans">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-gradient-to-br from-violet-600/20 via-pink-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+      <div className="min-h-screen gradient-bg text-slate-100 flex flex-col items-center justify-center p-4 relative overflow-y-auto font-sans py-12">
+        <div className="fixed top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-gradient-to-br from-violet-600/20 via-pink-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-md w-full relative z-10">
           <div className="card-blur rounded-3xl p-8 border border-white/10 shadow-2xl space-y-6">
@@ -400,8 +400,60 @@ export default function App() {
                 <span>{authSuccess}</span>
               </div>
             )}
-
           </div>
+
+          {/* ========================================== */}
+          {/* BLOCO DE PROMOÇÃO (ADICIONADO AQUI) */}
+          {/* ========================================== */}
+          <div className="mt-8 flex flex-col items-center justify-center p-6 bg-[#0a1122]/90 border border-pink-500/30 rounded-3xl shadow-2xl shadow-pink-500/10 relative overflow-hidden backdrop-blur-xl">
+            {/* Efeito visual no fundo do card de promo */}
+            <div className="absolute -top-10 -right-10 w-32 h-32 bg-pink-500/20 rounded-full blur-2xl" />
+            <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-emerald-500/20 rounded-full blur-2xl" />
+            
+            <div className="relative z-10 w-full flex flex-col items-center">
+              <div className="bg-gradient-to-r from-pink-500 to-orange-500 text-white text-[10px] font-black uppercase tracking-widest py-1.5 px-4 rounded-full mb-4 shadow-lg shadow-pink-500/30 animate-pulse">
+                🔥 Oferta Exclusiva
+              </div>
+              
+              <h3 className="text-white font-bold text-center mb-3">Ainda não tem acesso?</h3>
+              
+              <p className="text-slate-400 text-sm font-medium flex items-center gap-2">
+                Preço normal: 
+                <span className="line-through decoration-red-500 decoration-2 font-bold text-slate-500">
+                  R$ 86,90
+                </span>
+              </p>
+              
+              <div className="flex items-baseline gap-1 mt-1 mb-4">
+                <span className="text-lg text-slate-300 font-semibold">por</span>
+                <h3 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-green-500 drop-shadow-sm">
+                  R$ 34,90
+                </h3>
+              </div>
+              
+              <div className="w-full space-y-2 mb-5">
+                <p className="text-emerald-400 text-xs font-medium flex items-center justify-center gap-2 bg-emerald-500/10 py-2 rounded-lg border border-emerald-500/20">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Pagamento Único
+                </p>
+                <p className="text-emerald-400 text-xs font-medium flex items-center justify-center gap-2 bg-emerald-500/10 py-2 rounded-lg border border-emerald-500/20">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Acesso Imediato
+                </p>
+              </div>
+
+              {/* ATENÇÃO: COLOQUE SEU LINK DA KIWIFY AQUI NO HREF */}
+              <a 
+                href="COLOQUE_SEU_LINK_DE_CHECKOUT_DA_KIWIFY_AQUI" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="w-full py-4 px-4 bg-gradient-to-r from-emerald-500 to-green-600 hover:scale-[1.02] active:scale-[0.98] text-white font-black rounded-xl text-sm transition-all shadow-xl shadow-green-500/20 flex items-center justify-center gap-2"
+              >
+                <ShoppingCart className="w-4 h-4" />
+                Garantir Meu Acesso Agora
+              </a>
+            </div>
+          </div>
+          {/* FIM DO BLOCO DE PROMOÇÃO */}
+
         </div>
       </div>
     );
